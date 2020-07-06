@@ -1,2 +1,3 @@
 # shell-asm-linux
-shell asm linux
+
+Without CRT libs, only syscalls
