@@ -31,21 +31,35 @@ bits 64
 %define PATH_MAX_SIZE	 	 1024
 
 section .rodata
-		PATH_ARGV_NAME	 db "/bin/sh", 0
-		PATH_ARGV_0		 db "-c", 0
-		PATH_ARGV_1		 db "echo $PATH", 0
-		PATH_ARGV_2		 db 0
-		PATH_ARGV		 dq	PATH_ARGV_NAME
-						 dq	PATH_ARGV_0
-						 dq	PATH_ARGV_1
-						 dq	PATH_ARGV_2
+		PATH_0			 db "/bin", 0
+		PATH_0_LEN		 db 4
+		PATH_1			 db "/usr/bin", 0
+		PATH_1_LEN		 db 8
+		PATH			 dq	PATH_0
+						 dq	PATH_1
+		PATH_LEN		 dq PATH_0_LEN
+						 dq PATH_1_LEN
+		PATH_SIZE		 db 2			;if put new path, then 
+								;change this value
+
+		PATH_BSHELL		 db "/bin/sh", 0
+
+;		PATH_ARGV_NAME	 db "/bin/sh", 0
+;		PATH_ARGV_0		 db "-c", 0
+;		PATH_ARGV_1		 db "echo $PATH", 0
+;		PATH_ARGV_2		 db 0
+;		PATH_ARGV		 dq	PATH_ARGV_NAME
+;						 dq	PATH_ARGV_0
+;						 dq	PATH_ARGV_1
+;						 dq	PATH_ARGV_2
 
 section .bss
 		read_buffer_data resb READ_BUFFER_MAX_SIZE
-		PATH			 resb 1024
-		PATH_SIZE		 resw 1
+;		PATH			 resb 1024
+;		PATH_SIZE		 resw 1
 
 section .text
+
 ;----------------------------------------------------------------
 ;set PATH from system variable
 ;	create pipe, fork, and execv "/bin/sh -c "echo $PATH"", after
@@ -55,67 +69,68 @@ section .text
 				  ;rcx = something remaining from close syscall
 				  ;rax = syscall close return value
 				  ;rdx = PATH_MAX_SIZE
-init_path:
-		sub		rsp,	8
-	;int pipe(int pipefd[2]);
-		mov		rdi,	rsp
-		mov		rax,	0x16	;pipe
-		syscall
-    ;pid_t fork(void);
-		mov		rax,	0x39	;fork
-		syscall
-		cmp		rax,	0
-		jne		.itp_pt			;jump to parent code
-			;this is child code
-		;int dup2(int oldfd, int newfd);
-			mov		edi,	dword[rsp + 4] ;fd[1], WRITE_END
-			mov		rsi,	1			   ;STDOUT_FILENO
-			mov		rax,	0x21
-			syscall
-    	;int close(int fd);
-			mov		edi,	dword[rsp]	   ;fd[0], READ_END
-			mov		rax,	0x03		   ;close
-			syscall
-			mov		edi,	dword[rsp + 4] ;fd[1], WRITE_END
-			mov		rax,	0x03		   ;close
-			syscall
-       ;int execve(const char *pathname, char *const argv[],
-                  ;char *const envp[]);
-			mov		rdi,	PATH_ARGV_NAME
-			mov		rsi,	PATH_ARGV
-			xor		rdx,	rdx
-			mov		rax,	0x3b	;execve
-			syscall
-			
-	;pid_t wait4(pid_t pid, int *wstatus, int options,
-                ;struct rusage *rusage);
-.itp_pt:xor		rdi,	rdi
-		xor		rsi,	rsi
-		xor		rdx,	rdx
-		xor		r10,	r10
-		mov		rax,	0x3d	;wait4
-		syscall
-    ;ssize_t read(int fd, void *buf, size_t count);
-		mov		edi,	dword[rsp]	;fd[0], READ_END
-		mov		rsi,	PATH
-		mov		rdx,	PATH_MAX_SIZE
-		xor		rax,	rax		;read
-		syscall
-		mov		word[PATH_SIZE],	ax
-		add		rax,	PATH
-		xor		rcx,	rcx
-		mov		byte[rax], 	cl ;0
-		mov		cl,		':'
-		mov		byte[rax - 1], 	cl
-    ;int close(int fd);
-		mov		edi,	dword[rsp]	;fd[0],	READ_END
-		mov		rax,	0x03	;close
-		syscall
-		mov		edi,	dword[rsp + 4];fd[1], WRITE_END
-		mov		rax,	0x03	;close
-		syscall
-		add		rsp,	8
-		ret
+;init_path:
+;		sub		rsp,	8
+;	;int pipe(int pipefd[2]);
+;		mov		rdi,	rsp
+;		mov		rax,	0x16	;pipe
+;		syscall
+;   ;pid_t fork(void);
+;		mov		rax,	0x39	;fork
+;		syscall
+;		test	rax,	rax
+;		jne		.itit_path_parrent_code			;jump to parent code
+;			;this is child code
+;		;int dup2(int oldfd, int newfd);
+;			mov		edi,	dword[rsp + 4] ;fd[1], WRITE_END
+;			mov		rsi,	1			   ;STDOUT_FILENO
+;			mov		rax,	0x21
+;			syscall
+;   	;int close(int fd);
+;			mov		edi,	dword[rsp]	   ;fd[0], READ_END
+;			mov		rax,	0x03		   ;close
+;			syscall
+;			mov		edi,	dword[rsp + 4] ;fd[1], WRITE_END
+;			mov		rax,	0x03		   ;close
+;			syscall
+;      ;int execve(const char *pathname, char *const argv[],
+;                  ;char *const envp[]);
+;			mov		rdi,	PATH_ARGV_NAME
+;			mov		rsi,	PATH_ARGV
+;			xor		rdx,	rdx
+;			mov		rax,	0x3b	;execve
+;			syscall
+;			
+;	;pid_t wait4(pid_t pid, int *wstatus, int options,
+;                ;struct rusage *rusage);
+;.init_path_parrent_code:
+;xor		rdi,	rdi
+;		xor		rsi,	rsi
+;		xor		rdx,	rdx
+;		xor		r10,	r10
+;		mov		rax,	0x3d	;wait4
+;		syscall
+;   ;ssize_t read(int fd, void *buf, size_t count);
+;		mov		edi,	dword[rsp]	;fd[0], READ_END
+;		mov		rsi,	PATH
+;		mov		rdx,	PATH_MAX_SIZE
+;		xor		rax,	rax		;read
+;		syscall
+;		mov		word[PATH_SIZE],	ax
+;		add		rax,	PATH
+;		xor		rcx,	rcx
+;		mov		byte[rax], 	cl ;0
+;		mov		cl,		':'
+;		mov		byte[rax - 1], 	cl
+;   ;int close(int fd);
+;		mov		edi,	dword[rsp]	;fd[0],	READ_END
+;		mov		rax,	0x03	;close
+;		syscall
+;		mov		edi,	dword[rsp + 4];fd[1], WRITE_END
+;		mov		rax,	0x03	;close
+;		syscall
+;		add		rsp,	8
+;		ret
 ;----------------------------------------------------------------
 
 ;----------------------------------------------------------------
@@ -128,10 +143,12 @@ init_path:
 skip_spaces:
 ;		push	rcx
 		mov		rax,	0x20	;0x20 = ' '
-		jmp 	.sk_sc2
-.sk_sc: inc		rcx
-.sk_sc2:cmp		byte [rcx], al	
-		je	 	.sk_sc
+		jmp 	.ss_loop_2
+.ss_loop:
+		inc		rcx
+.ss_loop_2:
+		cmp		byte [rcx], al	
+		je	 	.ss_loop
 ;		pop		rax
 ;		sub		rax,	rcx
 		ret
@@ -161,25 +178,29 @@ delete_space_holes:
 		xor		rbp,	rbp 	;iterator for stack buffer
 	;copy on stack buffer from rcx according by the rules on the comment
 ;of this function
-.dsh_lp:mov		bx,  	word[rcx + rax]
+.dsh_loop:
+		mov		bx,  	word[rcx + rax]
 		cmp		rdx,	1
-		je		.dsh_2
+		je		.dsh_if_in_double_quote_now
 		cmp		bl,		'"'
-		jne		.dsh_3
+		jne		.dsh_if_i_not_double_quote
 		mov		rdx,	1
-		jmp		.dsh_0
-.dsh_3: cmp		bx,		0x2020		;'  ', two spaces in a row
-		jne		.dsh_0
+		jmp		.dsh_loop_epilogue
+.dsh_if_i_not_double_quote: 
+		cmp		bx,		0x2020		;'  ', two spaces in a row
+		jne		.dsh_loop_epilogue
 		inc		rax
-		jmp		.dsh_lp
-.dsh_2:	cmp		bl,		'"'
-		jne		.dsh_0
+		jmp		.dsh_loop
+.dsh_if_in_double_quote_now:
+		cmp		bl,		'"'
+		jne		.dsh_loop_epilogue
 		xor		rdx,	rdx
-.dsh_0:	mov		byte [rsp + rbp], bl
-.dsh_1:	inc		rax
+.dsh_loop_epilogue:
+		mov		byte [rsp + rbp], bl
+		inc		rax
 		inc 	rbp
-		cmp		bl,		0x00
-		jne		.dsh_lp
+		test	bl,		bl
+		jne		.dsh_loop
 
 		dec		rbp		;the cycle is written so that an extra 1 added to rbp
 	;in rbp at the moment stores size of stack_buffer. Perhaps it will
@@ -188,10 +209,13 @@ delete_space_holes:
 
 	;copy on rcx_buffer from stack.
 	;This cycle don't copy first element, but I don't need
-.cp_buf:mov		bl,		byte[rsp + rbp]
+.dsh_cp_buf:
+		mov		bl,		byte[rsp + rbp]
 		mov		byte[rcx + rbp], bl
 		dec		rbp
-		jnz		.cp_buf
+		jnz		.dsh_cp_buf
+
+		mov		byte[rcx + rdx - 1], bpl
 
 		add		rsp,	READ_BUFFER_MAX_SIZE ;free stack memory
 		ret
@@ -225,19 +249,180 @@ sep_str_to_cmd:
 
 ;----------------------------------------------------------------
 ;args:
+;	1. r12, argc
+;	2. rsi,	argv
+;
+;modify registers: r15 = r12 * 16
+				  ;r9  = 0
+				  ;rcx = ??? change in syscall
+				  ;r11 = ??? change in syscall
+				  ;rdx = ??? change in syscall
+				  ;rsi = ??? change in syscall
+				  ;rdi = ??? change in syscall
+				  ;rax = return of syscall
+execve_as_script:
+		mov		r15,	r12
+		shl		r15,	4	;alloc with a margin
+		sub		rsp,	r15	;alloc rsp_argv so call pathname through /bin/sh
+		
+		mov		rax,	PATH_BSHELL
+		mov		qword[rsp],	rax
+		xor		rax,	rax
+
+		;copy rsi_argv to rsp_argv
+.eas_cpy_argv:	
+		mov		r9,		qword[rsi + rax * 8]
+		inc		rax
+		mov		qword[rsp + rax * 8],	r9
+		test	r9,		r9
+		jne		.eas_cpy_argv
+
+	;int execve(const char *filename, char *const argv[],
+		;char *const envp[]); 
+		mov		rdi,	[rsp]
+		mov		rsi,	rsp
+		xor		rdx,	rdx
+		mov		rax,	0x3b	;execve
+		syscall
+
+		add		rsp,	r15	;free rsp_argv
+		ret
+;----------------------------------------------------------------
+
+;----------------------------------------------------------------
+;args:
+;	1. rsi, argv
+;
+;modify registers: r12 = argc
+				  ;rcx = ??? change in syscall
+				  ;r11 = ??? change in syscall
+				  ;rdx = ??? change in syscall
+				  ;rsi = ??? change in syscall
+				  ;rdi = ??? change in syscall
+				  ;if is_slash
+				  	  ;rax = return of syscall
+					  ;if execve_as_script was called:
+					  	  ;r15 = r12 * 16
+				  ;if not_is_slash
+				  	  ;rax = [PATH_SIZE]
+					  ;if execve_as_script was called:
+					  	  ;r15 = r12 * 16
+execvp:
+	;counting argc
+		xor		r12,	r12
+		xor		rax,	rax
+.e_count_argc_loop:
+		cmp		[rsi + r12 * 8], rax
+		je		.e_count_argc_loop_end
+		inc		r12
+		jmp		.e_count_argc_loop
+.e_count_argc_loop_end:
+	;check if pathname contain '/'
+		mov		rbp,	[rsi]
+.e_check_slash: 
+		mov		cl,	byte[rbp]
+		cmp		cl,	'/'
+		je		.e_if_slash
+		inc		rbp
+		test	cl,	cl
+		jne		.e_check_slash
+		sub		rsp,	1024	;allocate stack for modificated argv[0]
+
+;		xor		rax,	rax		;path index iterator
+.e_not_slash_loop:
+		xor		rbp,	rbp		;stack iterator
+		xor		rdi,	rdi		;path copy iterator
+		mov		r9,		[PATH + rax * 8] ;PATH[i] string, PATH is char**
+.e_cpy_path_to_argv_0:	
+		mov		cl,	byte[r9 + rdi]
+		mov		byte [rsp + rbp], cl
+		inc		rbp
+		inc		rdi
+		test	cl,	cl
+		jne		.e_cpy_path_to_argv_0
+		mov		byte [rsp + rbp - 1], '/'
+		xor		rdi,	rdi
+		mov		r9,		[rsi]	;pathname
+.e_cpy_pathname_to_argv_0:
+		mov		cl,	byte[r9 + rdi]
+		mov		byte [rsp + rbp], cl
+		inc		rbp
+		inc		rdi
+		test	cl,	cl
+		jne		.e_cpy_pathname_to_argv_0
+
+	;int execve(const char *filename, char *const argv[],
+		;char *const envp[]); 
+		push	rax
+		push	rsi
+		mov		rdi,	rsp
+		add		rdi,	16
+		mov		rsi,	rsi
+		xor		rdx,	rdx
+		mov		rax,	0x3b	;execve
+		syscall
+		pop		rsi
+		call	execve_as_script
+		pop		rax
+
+		inc		rax
+		cmp		ax,	[PATH_SIZE]
+		jne		.e_not_slash_loop
+		add		rsp,	1024	;free stack
+		ret
+.e_if_slash:
+	;int execve(const char *filename, char *const argv[],
+		;char *const envp[]); 
+		mov		rdi,	[rsi]
+		mov		rsi,	rsi
+		xor		rdx,	rdx
+		mov		rax,	0x3b	;execve
+		syscall
+		call	execve_as_script
+		ret
+;----------------------------------------------------------------
+
+;----------------------------------------------------------------
+;args:
 ;	1. rcx, ptr to buffer
 ;	2. rsi,	ptr to argv
+;	3. rdx, size of buffer
 ;Function skip all spaces and return pointer after spaces
 ;
-;modify registers: rcx = rcx + n, n - num of spaces
-;				   rax = 0x20, uncomment push/pop/sub for get num of spaces
+;modify registers: rbx = 0
+				  ;rsi = argc
+				  ;rcx = rcx + n, n - num of spaces
+				  ;rax = 0x20, uncomment push/pop/sub for get num of spaces
 parse_cmd:
 		sub		rsp,	32
+		xor		bl,	bl
+		mov		dil,	0x20
+		xor		rax,	rax
+		mov		rsi,	1
+		mov		qword[rsp],	rcx
+
+.lp:	cmp		byte[rcx + rax],	dil
+		jne		.ne2
+		mov		byte[rcx + rax],	bl
+		mov		r9,		rcx
+		add		r9,		rax
+		inc		r9
+		mov		qword[rsp + 8 * rsi],	r9
+		inc		rsi
+.ne2:	inc		rax
+		cmp		rax,	rdx
+		jne		.lp
+		mov		qword[rsp + 8 * rsi],	rbx
+
+		mov		rsi,	rsp
+		mov		rbx,	2
+		call 	execvp
+
 ;int execve(const char *filename, char *const argv[],
 ;char *const envp[]); 
-;		mov		rdi,	
-;		mov		rsi,
-;		mov		rdx,	
+;		mov		rdi,	[rsp]
+;		mov		rsi,	rsp
+;		mov		rdx,	0
 ;		mov		rax,	0x3b	;execve
 ;		syscall
 		add		rsp,	32
@@ -247,7 +432,7 @@ parse_cmd:
 ;----------------------------------------------------------------
 global _start
 _start:
-		call 	init_path
+;		call 	init_path
 	;ssize_t read(int fd, void *buf, size_t count);
 		mov		rdi,	1		;stdin
 		mov		rsi,	read_buffer_data
