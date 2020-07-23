@@ -363,10 +363,15 @@ global _start
 _start:
 		call	init
 
+.start_input:
 		call	input
 
 		mov		rsi,	read_buffer_data
 		call	prepare_for_parse
+
+		mov		eax,	0x74697865	;exit
+		cmp		dword[rsi],	eax
+		je		.start_end
 
 		call	calc_sep
 		;num of sep = r13, num of cmd = r13 + 1.
@@ -392,12 +397,9 @@ _start:
 		rep		stosq
 		add		rsp,	r15
 
-		jmp		_start
+		jmp		.start_input
 
-		xor		rdi,	rdi		;stdin
-		mov		rsi,	read_buffer_data
-		mov		rdx,	32
-		call	write
-
+.start_end:
+		call	term_to_default
 		xor		rdi, 	rdi		; result, return 0
 		call	exit

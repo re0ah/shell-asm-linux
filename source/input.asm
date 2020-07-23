@@ -3,7 +3,6 @@ section .rodata
 					db 0x20
 		left_arrow	db 0x1B, 0x5B, 0x44
 		right_arrow db 0x1B, 0x5B, 0x43
-		new_string  db 0x0a
 section .data
 		input_c dd 0
 section .text
@@ -165,9 +164,10 @@ input:
 		jmp		.input_start
 .if_enter:
 		xor		rdi,	rdi
-		mov		rsi,	new_string
+		mov		rsi,	input_c
 		mov		rdx,	1
-		call	write
+		mov		rax,	1	;write
+		syscall
 		ret
 ;----------------------------------------------------------------
 
