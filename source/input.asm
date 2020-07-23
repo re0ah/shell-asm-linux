@@ -3,12 +3,18 @@ section .rodata
 					db 0x20
 		left_arrow	db 0x1B, 0x5B, 0x44
 		right_arrow db 0x1B, 0x5B, 0x43
+		new_string  db 0x0a
 section .data
 		input_c dd 0
 section .text
 ;----------------------------------------------------------------
 input:
 		xor		r12,	r12			;always 0 in this func
+
+		xor		rdi,	rdi
+		mov		rsi,	login_input_str
+		mov		rdx,	LOGIN_INPUT_STRLEN
+		call	write
 
 		mov		rcx,	128
 		mov		rdi,	read_buffer_data
@@ -21,7 +27,7 @@ input:
 		mov		rdi,	1
 		mov		rsi,	input_c
 		mov		rdx,	4
-		xor		rax,	rax
+		xor		rax,	rax		;read
 		mov		dword[input_c], eax
 		syscall
 
@@ -158,6 +164,10 @@ input:
 		call	clear_input_once
 		jmp		.input_start
 .if_enter:
+		xor		rdi,	rdi
+		mov		rsi,	new_string
+		mov		rdx,	1
+		call	write
 		ret
 ;----------------------------------------------------------------
 

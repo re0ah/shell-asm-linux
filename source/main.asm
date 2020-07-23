@@ -31,7 +31,7 @@ bits 64
 %include "syscalls.asm"
 %include "execvp.asm"
 %include "parse.asm"
-%include "term.asm"
+%include "init.asm"
 %include "input.asm"
 
 %define PAGE_SIZE 4096
@@ -306,7 +306,7 @@ exec_all_cmd:
 				mov		edi,	dword[rsp + rbp + 4] ;fd[rcx][1], WRITE_END
 				mov		rsi,	1					 ;STDOUT_FILENO
 				call	dup2
-
+;
 		.eac_jmp_dup_last_1:
 				mov		edi,	dword[rsp + r12]	 ;fd[rcx - 1][0], READ_END
 				call	close
@@ -361,7 +361,7 @@ exec_all_cmd:
 ;----------------------------------------------------------------
 global _start
 _start:
-		call	term_init
+		call	init
 
 		call	input
 
