@@ -1,7 +1,7 @@
-%include "term.asm"
-%include "ttyname.asm"
-%include "setlogin.asm"
-%include "setlogin_input_str.asm"
+%include "init/term.asm"
+%include "init/ttyname.asm"
+%include "init/setlogin.asm"
+%include "init/setlogin_input_str.asm"
 
 section .text
 init:

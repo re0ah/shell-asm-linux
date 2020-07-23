@@ -31,7 +31,7 @@ bits 64
 %include "syscalls.asm"
 %include "execvp.asm"
 %include "parse.asm"
-%include "init.asm"
+%include "init/init.asm"
 %include "input.asm"
 
 %define PAGE_SIZE 4096
