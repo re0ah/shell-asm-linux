@@ -40,7 +40,8 @@ bits 64
 %define PATH_MAX_SIZE	 	 1024
 
 section .bss
-		read_buffer_data resb READ_BUFFER_MAX_SIZE
+		read_buffer_data  resb READ_BUFFER_MAX_SIZE
+		read_buffer_data2 resb READ_BUFFER_MAX_SIZE
 section .text
 ;----------------------------------------------------------------
 ;args:
@@ -237,13 +238,13 @@ exec_all_cmd:
 .eac_body_sep_if_pipe:
 		int3
 .eac_body_sep_out:
-		mov		r8,	0x0241
+		mov		r8,	0x0241	;O_WRONLY | O_CREAT | O_TRUNC
 		jmp		.eac_body_sep_out_1
 .eac_body_sep_out_end:
-		mov		r8,	0x0441
+		mov		r8,	0x0441	;O_WRONLY | O_CREAT | O_APPEND			
 .eac_body_sep_out_1:
 		dec		rcx
-		lea		r12,	[r10 + (rcx * 8)];	fd[rcx - 1]
+		lea		r12,	[r10 + (rcx * 8)];fd[rcx - 1]
 		add		r12,	r14
 		inc		rcx
 		mov		edi,	dword[rsp + r12] ;fd[rcx - 1][0], READ_END
@@ -366,8 +367,12 @@ _start:
 .start_input:
 		call	input
 
-		mov		rsi,	read_buffer_data
+		mov		rsi,	rbp
 		call	prepare_for_parse
+
+		xor		rax,	rax
+		cmp		byte[rsi],	al
+		je		.start_input
 
 		mov		eax,	0x74697865	;exit
 		cmp		dword[rsi],	eax
@@ -398,7 +403,6 @@ _start:
 		add		rsp,	r15
 
 		jmp		.start_input
-
 .start_end:
 		call	term_to_default
 		xor		rdi, 	rdi		; result, return 0

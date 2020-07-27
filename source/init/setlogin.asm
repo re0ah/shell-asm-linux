@@ -49,15 +49,14 @@ setlogin:
 		sub		rsp,	ALLOC_SETLOGIN
 		
 		mov		rdi,	utmp_path
-		xor		rdx,	rdx			;O_RDONLY	 |
+		xor		rdx,	rdx			;O_RDONLY
 		xor		rsi,	rsi
 		mov		rax,	0x02		;open
 		syscall
-
 		mov		r15,	rax			;save fd
-		
+	
 		mov		rdi,	r15			;fd
-		lea		rsi,	[rsp]		;struct stat
+		mov		rsi,	rsp		;struct stat
 		mov		rax,	0x05		;fstat
 		syscall
 
